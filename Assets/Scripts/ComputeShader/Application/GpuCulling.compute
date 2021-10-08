@@ -1,0 +1,15 @@
+﻿#pragma kernel Culling
+
+struct a2v {
+	float3 vertex;
+	float3 color;
+	float3 normal;
+};
+
+RWStructuredBuffer<a2v> meshBuffer;
+
+[numthreads(16,1,1)]
+void Culling(uint3 id : SV_DispatchThreadID)
+{
+    
+}

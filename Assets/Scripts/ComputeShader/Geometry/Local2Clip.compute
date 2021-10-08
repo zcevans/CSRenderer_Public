@@ -1,0 +1,46 @@
+﻿
+int vertexBufferCount;
+float4x4 Model2WorldMatrix;
+float4x4 CameraTransMatrix;
+float4x4 View2ClipMatrix;
+float4x4 TestMatrix;
+StructuredBuffer<int> countBuffer;
+RWStructuredBuffer<float3> VertexBuffer;
+RWStructuredBuffer<float> VertexDepthBuffer;
+
+#pragma kernel Local2World
+[numthreads(16, 1, 1)]
+void Local2World(uint id : SV_DispatchThreadID)
+{
+	if (id < vertexBufferCount)
+		VertexBuffer[id] = mul(Model2WorldMatrix, float4(VertexBuffer[id], 1));
+}
+ 
+#pragma kernel World2View
+[numthreads(16, 1, 1)]
+void World2View(uint id : SV_DispatchThreadID)
+{
+	if (id < vertexBufferCount)
+	{
+		VertexBuffer[id] = mul(CameraTransMatrix, float4(VertexBuffer[id], 1));
+	}
+}
+
+#pragma kernel View2Clip
+[numthreads(16, 1, 1)]
+void View2Clip(uint id : SV_DispatchThreadID)
+{
+	if (id < vertexBufferCount)
+	{
+		//float4 clipPos = mul(View2ClipMatrix, float4(VertexBuffer[id], 1));
+		float temp = VertexBuffer[id].z;
+		float4 a = mul(View2ClipMatrix, float4(VertexBuffer[id], 1));
+		a /= temp ;
+		//a += float4(1, 1, 1, 0);
+		float4 clipPos = mul(TestMatrix, a);
+
+		VertexBuffer[id] =  clipPos.xyz;
+		VertexDepthBuffer[id] = clipPos.w;
+	}
+		
+}

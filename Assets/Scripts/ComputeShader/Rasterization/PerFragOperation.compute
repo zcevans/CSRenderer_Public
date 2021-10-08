@@ -1,0 +1,26 @@
+﻿#pragma kernel Frag
+
+StructuredBuffer<int> countBuffer;
+
+StructuredBuffer<int2> fragBuffer;	//未设置大小，能直接将AppendBuffer设置进来吗？
+StructuredBuffer<float> zBuffer;
+StructuredBuffer<float4> frameBuffer;
+
+RWTexture2D<float4> frameTex;
+RWTexture2D<float4> depthTex;
+
+[numthreads(16,1,1)]
+void Frag(uint id : SV_DispatchThreadID)
+{
+	if (id < countBuffer[0])
+	{
+
+		if (zBuffer[id] < -1)
+			return;
+
+		//todo：利用原子操作比较当前zBuffer与depthTex大小，替换
+
+		frameTex[fragBuffer[id].xy] = frameBuffer[id];
+		depthTex[fragBuffer[id].xy] = zBuffer[id];
+	}
+}

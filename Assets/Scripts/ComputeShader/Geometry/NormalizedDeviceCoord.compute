@@ -1,0 +1,15 @@
+﻿
+int vertexBufferCount;
+RWStructuredBuffer<float3> VertexBuffer;
+RWStructuredBuffer<float> VertexDepthBuffer;
+
+#pragma kernel NormalizedDeviceCoordinates
+[numthreads(16, 1, 1)]
+void NormalizedDeviceCoordinates(uint id : SV_DispatchThreadID)
+{
+	if (id < vertexBufferCount)
+	{
+		VertexBuffer[id].xyz /= VertexDepthBuffer[id];
+	}
+}
+ 

@@ -1,0 +1,41 @@
+﻿#pragma kernel Mapping
+int vertexCount;
+int pixelWidth;
+int pixelHeight;
+StructuredBuffer<float3> VertexBuffer;
+StructuredBuffer<float> VertexDepthBuffer;
+RWStructuredBuffer<float3> ScreenPosBuffer;
+
+[numthreads(16,1,1)]
+void Mapping(uint id : SV_DispatchThreadID)
+{
+	
+	ScreenPosBuffer[id].x = VertexBuffer[id].x * pixelWidth / 2 + pixelWidth / 2;
+	ScreenPosBuffer[id].y = VertexBuffer[id].y * pixelHeight / 2 + pixelHeight / 2;
+	ScreenPosBuffer[id].z = VertexDepthBuffer[id];
+
+	//if (id < 3)	//取前三个顶点
+	//{
+	//	//NDC —> Screen
+	//	ScreenPosBuffer[id].x = ScreenPosBuffer[id].x * 
+	//}
+	/*if (id == 0)
+	{
+		ScreenPosBuffer[id].x = 0;
+		ScreenPosBuffer[id].y = 0;
+		ScreenPosBuffer[id].z = 0.5;
+	}
+	if (id == 1)
+	{
+		ScreenPosBuffer[id].x = 100;
+		ScreenPosBuffer[id].y = 100;
+		ScreenPosBuffer[id].z = 0.5;
+	}
+	if (id == 2)
+	{
+		ScreenPosBuffer[id].x = 150;
+		ScreenPosBuffer[id].y = 50;
+		ScreenPosBuffer[id].z = 0.5;
+	}*/
+
+}

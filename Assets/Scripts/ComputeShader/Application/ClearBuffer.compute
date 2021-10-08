@@ -1,0 +1,11 @@
+﻿#pragma kernel ClearBuffer
+
+RWTexture2D<float4> frameTex;
+RWTexture2D<float4> depthTex;
+
+[numthreads(16,16,1)]
+void ClearBuffer(uint3 id : SV_DispatchThreadID)
+{
+	frameTex[id.xy] = float4(0, 0, 0, 0);
+	depthTex[id.xy] = float4(0, 0, 0, 0);
+}

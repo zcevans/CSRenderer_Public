@@ -1,0 +1,93 @@
+﻿#pragma kernel Traversal
+
+StructuredBuffer<int> TriangleBuffer;
+StructuredBuffer<float3> ScreenPosBuffer;	//z:depth
+
+AppendStructuredBuffer<int2> fragBuffer;
+AppendStructuredBuffer<float> zBuffer;
+AppendStructuredBuffer<float4> frameBuffer;
+
+int vertexCount;
+int triangleBufferCount;
+
+[numthreads(16,1,1)]
+void Traversal(uint id : SV_DispatchThreadID)
+{
+	if (id < triangleBufferCount / 3)
+	{
+		//1.三角形设置
+		int2 a = ScreenPosBuffer[TriangleBuffer[id * 3 + 0]].xy;
+		int2 b = ScreenPosBuffer[TriangleBuffer[id * 3 + 1]].xy;
+		int2 c = ScreenPosBuffer[TriangleBuffer[id * 3 + 2]].xy;
+
+		int2 ab = b - a;
+		int2 bc = c - b;
+		int2 ca = a - c;
+
+		//2.三角形遍历
+
+		//2.1 获取三角形2D包围盒
+		int Left = min(min(a.x, b.x), c.x);
+		int Down = min(min(a.y, b.y), c.y);
+		int Right = max(max(a.x, b.x), c.x);
+		int Up =    max(max(a.y, b.y), c.y);
+
+		int2 upRight   = int2(Right, Up);
+		int2 downLeft  = int2(Left, Down);
+
+		//2.2 遍历2D包围盒，在三角形内部的片元加入AppendBuffer
+
+		for (int i = downLeft.x; i < upRight.x; i++)
+		{
+			for (int j = downLeft.y; j < upRight.y; j++)
+			{
+				int2 curScreenPos = int2(i, j);
+
+				bool signOfAB = (cross(int3(ab, 0), int3(curScreenPos.x - a.x, curScreenPos.y - a.y, 0)).z) <= 0 ? 1 : 0;
+				bool signOfBC = (cross(int3(bc, 0), int3(curScreenPos.x - b.x, curScreenPos.y - b.y, 0)).z) <= 0 ? 1 : 0;
+				bool signOfCA = (cross(int3(ca, 0), int3(curScreenPos.x - c.x, curScreenPos.y - c.y, 0)).z) <= 0 ? 1 : 0;
+
+				if (signOfAB > 0 && signOfBC > 0 && signOfCA > 0)
+				{
+					//写入坐标信息
+					fragBuffer.Append(curScreenPos);
+
+					//计算重心坐标
+					float alpha = (float)((c.x - curScreenPos.x) * (b.y - c.y) + (curScreenPos.y - c.y)*(b.x - c.x)) /
+						((c.x - a.x)*(b.y - c.y) + (a.y - c.y)*(b.x - c.x));
+					float beta = (float)((b.x - curScreenPos.x)*(a.y - b.y) + (curScreenPos.y - b.y)*(a.x - b.x)) /
+						((b.x - c.x)*(a.y - b.y) + (c.y - b.y)*(a.x - b.x));
+					float gamma = 1 - alpha - beta;
+
+					//zBuffer:逆变换到三维空间 https://blog.csdn.net/weixin_35968185/article/details/112720041 
+
+					zBuffer.Append(alpha * ScreenPosBuffer[TriangleBuffer[id * 3 + 0]].z + 
+								   beta * ScreenPosBuffer[TriangleBuffer[id * 3 + 1]].z + 
+								   gamma * ScreenPosBuffer[TriangleBuffer[id * 3 + 2]].z);	//temp
+
+					//todo:颜色、法线、uv等插值	(((φ(◎ロ◎;)φ)))
+					frameBuffer.Append(alpha * float4(1, 0, 0, 1) + beta * float4(0, 1, 0, 1) + gamma * float4(0, 0, 1, 1));
+
+				}
+			}
+		}
+	}
+
+	//if (id == 0)
+	//{
+	//	float2 a = VertexBuffer[0];
+	//	float2 c = VertexBuffer[1];
+	//	float2 b = VertexBuffer[2];
+	//	float signOfTrig = (b.x - a.x)*(c.y - a.y) - (b.y - a.y)*(c.x - a.x);
+
+	//	float signOfAB = (b.x - a.x)*(p.y - a.y) - (b.y - a.y)*(p.x - a.x);
+	//	float signOfCA = (a.x - c.x)*(p.y - c.y) - (a.y - c.y)*(p.x - c.x);
+	//	float signOfBC = (c.x - b.x)*(p.y - c.y) - (c.y - b.y)*(p.x - c.x);
+
+
+	//	bool d1 = (signOfAB * signOfTrig > 0);
+	//	bool d2 = (signOfCA * signOfTrig > 0);
+	//	bool d3 = (signOfBC * signOfTrig > 0);
+	//	println(d1 && d1 && d3);
+	//}
+}
